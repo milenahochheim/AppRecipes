@@ -1,4 +1,5 @@
-import React from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState } from "react";
 import {
   Text,
   StyleSheet,
@@ -6,13 +7,13 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Alert,
+  Keyboard,
 } from "react-native";
-// import * as eva from "@eva-design/eva";
-// import { ApplicationProvider, Icon, IconRegistry } from "@ui-kitten/components";
-// import { EvaIconsPack } from "@ui-kitten/eva-icons";
-// import AddRecipes from "./AddRecipes";
 
 export default function Recipes({ navigation, ...props }) {
+  const [searchRecipe, setsearchRecipe] = useState();
+
   function favoriteRecipe(index) {
     let newArray = [...props.recipes];
     let movedRecipe = newArray.splice(index, 1);
@@ -21,6 +22,60 @@ export default function Recipes({ navigation, ...props }) {
 
     let bin = [movedRecipe, ...props.moveToBin];
     props.setMoveToBin(bin);
+
+    AsyncStorage.setItem("storedRecipes", JSON.stringify(newArray))
+      .then(() => {
+        props.setRecipes(newArray);
+      })
+      .catch((error) => console.log(error));
+
+    AsyncStorage.setItem("favoritedRecipes", JSON.stringify(bin))
+      .then(() => {
+        props.setMoveToBin(bin);
+      })
+      .catch((error) => console.log(error));
+  }
+
+  function search() {
+    if (searchRecipe === "") {
+      Alert.alert("coloque um nome, uma letra de alguma receita :)");
+    } else if (searchRecipe !== "") {
+      props.recipes.forEach((item, index) => {
+        if (item.includes(searchRecipe)) {
+          let searchItem = [...props.recipes];
+          let firstArray = searchItem[0];
+          let index = [...props.recipes].indexOf(item);
+          searchItem[0] = item;
+          searchItem[index] = firstArray;
+          props.setRecipes(searchItem);
+        }
+      });
+    }
+    setsearchRecipe("");
+    Keyboard.dismiss();
+  }
+
+  function clearAllRecipes() {
+    let emptyArray = [...props.recipes];
+    let deletedComArray = [...props.moveToBin];
+    emptyArray.forEach((item, index) => {
+      deletedComArray.push(item);
+    });
+    emptyArray = [];
+    props.setRecipes(emptyArray);
+    props.setMoveToBin(deletedComArray);
+
+    AsyncStorage.setItem("storedRecipes", JSON.stringify(emptyArray))
+      .then(() => {
+        props.setRecipes(emptyArray);
+      })
+      .catch((error) => console.log(error));
+
+    AsyncStorage.setItem("favoritedRecipes", JSON.stringify(deletedComArray))
+      .then(() => {
+        props.setMoveToBin(deletedComArray);
+      })
+      .catch((error) => console.log(error));
   }
 
   return (
@@ -67,12 +122,22 @@ export default function Recipes({ navigation, ...props }) {
           placeholder="procure as receitas aqui :)"
           placeholderTextColor={"#B1303B"}
           style={[styles.input, { borderWidth: 1 }]}
+          value={searchRecipe}
+          onChangeText={(text) => setsearchRecipe(text)}
         />
-        <TouchableOpacity style={[styles.searchButton, { width: 50 }]}>
-          <Text style={{ fontSize: 17, color: "#fff" }}>go</Text>
+        <TouchableOpacity
+          style={[styles.searchButton, { width: 60 }]}
+          onPress={() => search()}
+        >
+          <Text style={{ fontSize: 14, color: "#fff", fontWeight: "bold" }}>
+            search
+          </Text>
         </TouchableOpacity>
-        {/* <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchButtonText}>Limpar</Text>
+        {/* <TouchableOpacity
+          style={styles.searchButton}
+          onPress={() => clearAllRecipes()}
+        >
+          <Text style={styles.searchButtonText}>clear</Text>
         </TouchableOpacity> */}
       </View>
       <ScrollView
@@ -147,10 +212,6 @@ export const styles = StyleSheet.create({
     color: "black",
     opacity: 0.8,
     marginTop: 10,
-    // shadowColor: "#B1303B",
-    // shadowOpacity: 0.5,
-    // shadowOffset: { width: 0, height: 4 },
-    // shadowRadius: 8,
     elevation: 5,
     backgroundColor: "white",
     borderColor: "#F4A233",
@@ -160,7 +221,7 @@ export const styles = StyleSheet.create({
   },
   index: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   headingContainer: {
     flexDirection: "row",
@@ -188,7 +249,6 @@ export const styles = StyleSheet.create({
     width: "75%",
   },
   text: {
-    fontWeight: "700",
     fontSize: 17,
     alignSelf: "center",
     marginLeft: 5,
@@ -201,15 +261,11 @@ export const styles = StyleSheet.create({
   input: {
     height: 40,
     paddingHorizontal: 20,
-    width: "86%",
+    width: "83%",
     fontSize: 15,
     color: "black",
     fontWeight: "600",
     opacity: 0.8,
-    // shadowColor: "#B1303B",
-    // shadowOpacity: 0.4,
-    // shadowOffset: { width: 0, height: 4 },
-    // shadowRadius: 8,
     elevation: 5,
     backgroundColor: "white",
     borderColor: "#B1303B",
@@ -230,9 +286,9 @@ export const styles = StyleSheet.create({
     height: 40,
   },
   searchButtonText: {
-    color: "#B1303B",
+    color: "#fff",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: 14,
   },
   emptyNoteContainer: {
     alignItems: "center",

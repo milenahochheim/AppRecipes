@@ -9,8 +9,9 @@ import {
   Alert,
 } from "react-native";
 import { styles } from "./Recipes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function FavRecipes({ ...props }) {
+export default function FavRecipes({ navigation, ...props }) {
   function emptyBin() {
     Alert.alert(
       "deletar todas as receitas",
@@ -27,6 +28,12 @@ export default function FavRecipes({ ...props }) {
             let emptyArray = [...props.moveToBin];
             emptyArray = [];
             props.setMoveToBin(emptyArray);
+
+            AsyncStorage.setItem("favoritedRecipes", JSON.stringify(emptyArray))
+              .then(() => {
+                props.setMoveToBin(emptyArray);
+              })
+              .catch((error) => console.log(error));
           },
         },
       ]
@@ -41,6 +48,18 @@ export default function FavRecipes({ ...props }) {
     });
     props.setMoveToBin([]);
     props.setRecipes(favRecipes);
+
+    AsyncStorage.setItem("storedRecipes", JSON.stringify(recipes))
+      .then(() => {
+        props.setRecipes(recipes);
+      })
+      .catch((error) => console.log(error));
+
+    AsyncStorage.setItem("favoritedRecipes", JSON.stringify([]))
+      .then(() => {
+        props.setMoveToBin([]);
+      })
+      .catch((error) => console.log(error));
   }
 
   function undoRecipe(index) {
@@ -51,6 +70,16 @@ export default function FavRecipes({ ...props }) {
     let newArray = [...props.moveToBin];
     newArray.splice(index, 1);
     props.setMoveToBin(newArray);
+
+    AsyncStorage.setItem("storedRecipes", JSON.stringify(array))
+      .then(() => {
+        props.setRecipes(array);
+      })
+      .catch((error) => console.log(error));
+
+    // AsyncStorage.setItem("favoritedRecipes", () => {
+    //   return;
+    // });
   }
 
   function permanentlyDelete(index) {
@@ -66,6 +95,12 @@ export default function FavRecipes({ ...props }) {
           let newArray = [...props.moveToBin];
           newArray.splice(index, 1);
           props.setMoveToBin(newArray);
+
+          AsyncStorage.setItem("favoritedRecipes", JSON.stringify(newArray))
+            .then(() => {
+              props.setMoveToBin(newArray);
+            })
+            .catch((error) => console.log(error));
         },
       },
     ]);
@@ -89,9 +124,6 @@ export default function FavRecipes({ ...props }) {
               <Text style={style.emptyButtonText}>undo all</Text>
             </TouchableOpacity>
 
-            <Text style={{ fontWeight: "700", fontSize: 18, color: "#B1303B" }}>
-              Total:
-            </Text>
             <TouchableOpacity
               style={style.emptyButton}
               onPress={() => emptyBin()}
@@ -100,6 +132,17 @@ export default function FavRecipes({ ...props }) {
             </TouchableOpacity>
           </View>
           <View style={styles.divider}></View>
+          <Text
+            style={{
+              fontSize: 20,
+              color: "black",
+              fontWeight: "bold",
+              marginTop: 3,
+            }}
+          >
+            receitinhas favoritas ♥️
+          </Text>
+
           {props.moveToBin.length === 0 ? (
             <View style={styles.emptyNoteContainer}>
               <Text style={styles.emptyNoteText}>
@@ -125,6 +168,7 @@ export default function FavRecipes({ ...props }) {
                 </View>
                 <View style={styles.dateContainer}>
                   <Text>{props.date} </Text>
+
                   <TouchableOpacity onPress={() => permanentlyDelete(index)}>
                     <Text style={styles.delete}>deletar</Text>
                   </TouchableOpacity>
